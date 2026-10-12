@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>简繁 — 设计原型 (v5 · 方案 B + 双向转换)</title>
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --surface: #F6F7F9;
+    --text-primary: #16181D;
+    --text-secondary: #5C6370;
+    --text-hint: #9CA3AF;
+    --border: #E7E9EE;
+    --border-strong: #D5D9E0;
+    --radius: 12px;
+    --radius-sm: 8px;
+
+    /* Logo identity */
+    --blue: #2B5CD9;
+    --blue-bright: #4F8EF7;
+    --green: #1BA37F;
+    --green-bright: #34D0A6;
+    --grad: linear-gradient(135deg, #4F8EF7 0%, #2B5CD9 45%, #1BA37F 100%);
+    --grad-rev: linear-gradient(135deg, #34D0A6 0%, #1BA37F 45%, #2B5CD9 100%);
+    --blue-soft: rgba(79, 142, 247, 0.08);
+    --green-soft: rgba(52, 208, 166, 0.09);
+
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI",
+            "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #E9ECF1; }
+  body { font-family: var(--font); color: var(--text-primary); padding: 40px 24px 64px; }
+
+  .banner {
+    max-width: 1000px; margin: 0 auto 28px;
+    font-size: 12.5px; color: var(--text-secondary);
+    text-align: center; letter-spacing: 0.04em; line-height: 1.7;
+  }
+  .banner strong { color: var(--text-primary); font-weight: 600; }
+
+  .grid {
+    max-width: 1000px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 36px;
+    align-items: start;
+  }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .label {
+    text-align: center; font-size: 12px; color: var(--text-secondary);
+    margin-bottom: 10px; font-weight: 600; letter-spacing: 0.05em;
+  }
+
+  .window {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    width: 480px; max-width: 100%;
+    margin: 0 auto;
+    box-shadow: 0 18px 44px rgba(22, 24, 29, 0.12);
+    display: flex; flex-direction: column;
+    height: 560px;
+    position: relative;
+  }
+
+  /* ---------- gradient top bar ---------- */
+  .bhead {
+    background: var(--grad);
+    padding: 16px 18px 44px;
+    color: #fff;
+  }
+  .window.rev .bhead { background: var(--grad-rev); }
+  .bhead-row { display: flex; align-items: center; gap: 10px; }
+  .bmark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .bbrand { flex: 1; min-width: 0; }
+  .bbrand .t1 { font-size: 16px; font-weight: 700; }
+  .bbrand .t2 { font-size: 11px; opacity: 0.85; margin-top: 1px; }
+  .bswitch {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 999px; padding: 5px 12px 5px 9px;
+    font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+  }
+  .bswitch .dot { width: 7px; height: 7px; border-radius: 50%; background: #B4F4DF; box-shadow: 0 0 0 3px rgba(255,255,255,0.18); }
+  .bswitch.paused { opacity: .75; }
+  .bswitch.paused .dot { background: rgba(255,255,255,.55); box-shadow: none; }
+  .bcog {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    border: 1px solid transparent; background: transparent; cursor: pointer;
+    color: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bcog:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+  /* ---------- floating glass conversion card ---------- */
+  .float-card {
+    margin: -32px 18px 0;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.75);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 28px rgba(22, 24, 29, 0.14);
+    padding: 12px 14px 14px;
+    position: relative; z-index: 2;
+  }
+  .fc-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; gap: 10px;
+  }
+  .fc-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    color: var(--text-secondary); text-transform: uppercase;
+  }
+
+  /* direction segmented control */
+  .seg {
+    display: inline-flex; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px; gap: 2px;
+  }
+  .seg button {
+    border: none; background: transparent; cursor: pointer;
+    font-family: inherit; font-size: 11px; font-weight: 600;
+    padding: 3px 11px; border-radius: 999px;
+    color: var(--text-secondary);
+    transition: all 160ms;
+  }
+  .seg button.active {
+    background: var(--grad); color: #fff;
+    box-shadow: 0 1px 4px rgba(43,92,217,.3);
+  }
+  .window.rev .seg button.active { background: var(--grad-rev); box-shadow: 0 1px 4px rgba(27,163,127,.3); }
+
+  .panes { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+  .pane {
+    border-radius: var(--radius-sm);
+    padding: 9px 11px;
+    min-height: 76px; max-height: 110px; overflow-y: auto;
+    font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+  }
+  .pane .tag {
+    font-family: var(--font);
+    display: inline-block; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.06em; margin-bottom: 5px;
+  }
+  .pane.src { background: var(--blue-soft); border: 1px solid rgba(79,142,247,.3); }
+  .pane.src .tag { color: var(--blue); }
+  .pane.dst { background: var(--green-soft); border: 1px solid rgba(52,208,166,.35); }
+  .pane.dst .tag { color: var(--green); }
+
+  .arrow-chip {
+    align-self: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--grad);
+    color: #fff; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(43, 92, 217, 0.3);
+  }
+  .window.rev .arrow-chip { background: var(--grad-rev); box-shadow: 0 2px 6px rgba(27,163,127,.3); }
+
+  /* ---------- history ---------- */
+  .hist { flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 14px 18px 0; }
+  .hist-head {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    color: var(--text-secondary); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .hist-head .clear { font-size: 11px; color: var(--text-hint); cursor: pointer; font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .hist-head .clear:hover { color: var(--text-primary); }
+
+  .hist-list {
+    flex: 1; overflow-y: auto;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 13px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px; cursor: pointer;
+  }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: var(--surface); }
+  .row .t { font-family: var(--font-mono); font-size: 11px; color: var(--text-hint); flex-shrink: 0; }
+  .row .k { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .row .k.s2t  { background: var(--green-bright); }
+  .row .k.t2s  { background: var(--blue-bright); }
+  .row .k.skip { background: var(--border-strong); }
+  .row .k.err  { background: #EF4444; }
+  .row .dir {
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+    padding: 1px 6px; border-radius: 4px; letter-spacing: 0.02em;
+  }
+  .row .dir.s2t { background: var(--green-soft); color: var(--green); }
+  .row .dir.t2s { background: var(--blue-soft); color: var(--blue); }
+  .row .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .txt .muted { color: var(--text-hint); font-style: italic; }
+
+  .row-open {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 13px 11px;
+  }
+  .row-open .res {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg);
+    border: 1px solid rgba(52,208,166,.45);
+    border-left: 3px solid var(--green-bright);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    font-family: var(--font-mono); font-size: 12px;
+  }
+  .row-open .res .copy {
+    flex-shrink: 0; font-family: var(--font); font-size: 11px;
+    border: 1px solid var(--border-strong); border-radius: 6px;
+    background: var(--bg); padding: 3px 10px; cursor: pointer;
+    color: var(--text-secondary);
+  }
+  .row-open .res .copy:hover { color: var(--green); border-color: var(--green-bright); }
+
+  .foot {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 18px 12px; font-size: 11.5px; color: var(--text-secondary);
+  }
+  .foot b {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 800;
+    background: var(--grad);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .foot .reset { color: var(--text-hint); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+  /* ---------- settings popover ---------- */
+  .popover {
+    position: absolute; top: 56px; right: 14px; z-index: 5;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 32px rgba(22,24,29,0.18);
+    min-width: 240px; padding: 6px;
+  }
+  .pop-title {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+    color: var(--text-hint); text-transform: uppercase;
+    padding: 7px 10px 4px;
+  }
+  .pop-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 8px 10px; border-radius: var(--radius-sm);
+    font-size: 13px; cursor: pointer;
+  }
+  .pop-row:hover { background: var(--surface); }
+  .pop-seg { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; }
+  .pop-seg span {
+    font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 999px;
+    color: var(--text-secondary); cursor: pointer;
+  }
+  .pop-seg span.active { background: var(--grad); color: #fff; }
+  .toggle {
+    width: 36px; height: 20px; border-radius: 999px; background: var(--border);
+    position: relative; flex-shrink: 0;
+  }
+  .toggle.on { background: var(--green-bright); }
+  .toggle::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .toggle.on::after { left: auto; right: 2px; }
+
+  .note {
+    max-width: 480px; margin: 14px auto 0;
+    font-size: 12px; color: var(--text-secondary); line-height: 1.8;
+  }
+  .note b { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <strong>简繁 · 设计原型 v5</strong> — 方案 B（渐变顶栏 + 玻璃悬浮卡）+ 新增「双向转换」功能设计<br/>
+  方向反转时整体色轴跟随翻转：简→繁 为「蓝→绿」，繁→简 为「绿→蓝」，用颜色本身表达转换方向
+</div>
+
+<div class="grid">
+
+  <!-- ========= 简 → 繁 模式 ========= -->
+  <div>
+    <div class="label">模式一 · 简 → 繁（蓝 → 绿）</div>
+    <div class="window">
+      <div class="bhead">
+        <div class="bhead-row">
+          <div class="bmark">简繁</div>
+          <div class="bbrand">
+            <div class="t1">简繁转换</div>
+            <div class="t2">剪贴板中文自动转换</div>
+          </div>
+          <div class="bswitch"><span class="dot"></span>运行中</div>
+          <button class="bcog" aria-label="设置">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="float-card">
+        <div class="fc-head">
+          <span class="fc-title">当前剪贴板</span>
+          <div class="seg">
+            <button class="active">简 → 繁</button>
+            <button>繁 → 简</button>
+          </div>
+        </div>
+        <div class="panes">
+          <div class="pane src"><span class="tag">简体</span><br/>简体中文的转换测试文字内容</div>
+          <div class="arrow-chip">→</div>
+          <div class="pane dst"><span class="tag">繁体</span><br/>簡體中文的轉換測試文字內容</div>
+        </div>
+      </div>
+
+      <div class="hist">
+        <div class="hist-head">历史记录 <span class="clear">清空</span></div>
+        <div class="hist-list">
+          <div class="row"><span class="t">14:32:05</span><span class="dir s2t">简→繁</span><span class="txt">简体中文的转换测试文字内容</span></div>
+          <div class="row" style="border-bottom:none"><span class="t">14:31:48</span><span class="dir s2t">简→繁</span><span class="txt">今天天气真不错，适合出去走走</span></div>
+          <div class="row-open">
+            <div class="res"><span style="color:var(--green);font-weight:700">→</span><span style="flex:1">今天天氣真不錯，適合出去走走</span><button class="copy">复制</button></div>
+          </div>
+          <div class="row"><span class="t">14:30:12</span><span class="dir t2s">繁→简</span><span class="txt">歡迎使用簡繁轉換工具</span></div>
+          <div class="row"><span class="t">14:28:55</span><span class="k skip"></span><span class="txt"><span class="muted">Hello world（无 CJK，跳过）</span></span></div>
+          <div class="row"><span class="t">14:27:31</span><span class="dir s2t">简→繁</span><span class="txt">人工智能的发展历程</span></div>
+        </div>
+      </div>
+
+      <div class="foot">累计转换 <b>128</b> <span class="reset">重置</span></div>
+    </div>
+    <div class="note">
+      <b>方向控制：</b>悬浮卡右上角的分段开关是核心交互，一键切换方向；
+      历史记录里每条带「简→繁 / 繁→简」彩色徽标，混合方向也能一眼区分。
+    </div>
+  </div>
+
+  <!-- ========= 繁 → 简 模式（含设置弹层） ========= -->
+  <div>
+    <div class="label">模式二 · 繁 → 简（绿 → 蓝）+ 设置弹层</div>
+    <div class="window rev">
+      <div class="bhead">
+        <div class="bhead-row">
+          <div class="bmark">繁简</div>
+          <div class="bbrand">
+            <div class="t1">简繁转换</div>
+            <div class="t2">剪贴板中文自动转换</div>
+          </div>
+          <div class="bswitch"><span class="dot"></span>运行中</div>
+          <button class="bcog" aria-label="设置" style="background:rgba(255,255,255,.15);color:#fff">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="float-card">
+        <div class="fc-head">
+          <span class="fc-title">当前剪贴板</span>
+          <div class="seg">
+            <button>简 → 繁</button>
+            <button class="active">繁 → 简</button>
+          </div>
+        </div>
+        <div class="panes">
+          <div class="pane dst"><span class="tag">繁体</span><br/>歡迎使用簡繁轉換小工具</div>
+          <div class="arrow-chip">→</div>
+          <div class="pane src"><span class="tag">简体</span><br/>欢迎使用简繁转换小工具</div>
+        </div>
+      </div>
+
+      <div class="hist">
+        <div class="hist-head">历史记录 <span class="clear">清空</span></div>
+        <div class="hist-list">
+          <div class="row"><span class="t">15:02:11</span><span class="dir t2s">繁→简</span><span class="txt">歡迎使用簡繁轉換小工具</span></div>
+          <div class="row"><span class="t">15:01:40</span><span class="dir t2s">繁→简</span><span class="txt">臺灣繁體與香港繁體的差異</span></div>
+          <div class="row"><span class="t">14:58:03</span><span class="dir s2t">简→繁</span><span class="txt">之前的简到繁记录仍然保留</span></div>
+        </div>
+      </div>
+
+      <div class="foot">累计转换 <b>131</b> <span class="reset">重置</span></div>
+
+      <!-- settings popover -->
+      <div class="popover">
+        <div class="pop-title">转换</div>
+        <div class="pop-row">
+          <span>默认方向</span>
+          <div class="pop-seg"><span>简→繁</span><span class="active">繁→简</span></div>
+        </div>
+        <div class="pop-row" style="align-items:flex-start">
+          <span>自动替换剪贴板内容<br/>
+            <small style="color:var(--text-hint);font-size:11px;font-weight:400">关闭后仅记录结果，不修改剪贴板</small>
+          </span>
+          <div class="toggle on" style="margin-top:2px"></div>
+        </div>
+        <div class="pop-title">启动</div>
+        <div class="pop-row"><span>启动时隐藏主窗口</span><div class="toggle"></div></div>
+      </div>
+    </div>
+    <div class="note">
+      <b>方向反转的视觉语言：</b>切到繁→简后，顶栏渐变翻转为「绿 → 蓝」，左右栏位置互换（繁体绿在左、简体蓝在右），
+      箭头与分段开关同步换色——整个界面用颜色流向讲清楚"现在往哪边转"。
+      设置弹层做成毛玻璃，含「默认方向」分段选择与分组标题。
+      <br/><b>设置项精简：</b>删除了「跳过非 CJK」（评估为固有行为，无需用户决策）；
+      「转换后写回剪贴板」改为「自动替换剪贴板内容」并加副标题说明，关闭即为仅预览模式。
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

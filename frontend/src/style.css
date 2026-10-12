@@ -1,0 +1,59 @@
+/* Global styles — v5 design tokens (gradient top bar + glass card) */
+:root {
+  --bg: #FFFFFF;
+  --surface: #F6F7F9;
+  --text-primary: #16181D;
+  --text-secondary: #5C6370;
+  --text-hint: #9CA3AF;
+  --accent: #2B5CD9;        /* = --blue, single brand accent */
+  --accent-soft: rgba(79, 142, 247, 0.12);
+  --border: #E7E9EE;
+  --border-strong: #D5D9E0;
+  --radius: 12px;
+  --radius-sm: 8px;
+
+  /* App-icon identity (blue = 简体, green = 繁体) */
+  --blue: #2B5CD9;
+  --blue-bright: #4F8EF7;
+  --green: #1BA37F;
+  --green-bright: #34D0A6;
+  --grad: linear-gradient(135deg, #4F8EF7 0%, #2B5CD9 45%, #1BA37F 100%);
+  --grad-rev: linear-gradient(135deg, #34D0A6 0%, #1BA37F 45%, #2B5CD9 100%);
+  --blue-soft: rgba(79, 142, 247, 0.08);
+  --green-soft: rgba(52, 208, 166, 0.09);
+
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+html, body, #app { height: 100%; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+               'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-hint); }
+
+input, button { font-family: inherit; }
+
+/* Visible keyboard focus everywhere (H1 fix) */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect reduced motion (M4 fix) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

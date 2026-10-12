@@ -1,0 +1,22 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "jianfan",
+  "outputfilename": "简繁",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "bofe126",
+    "email": "92085151+bofe126@users.noreply.github.com"
+  },
+  "info": {
+    "companyName": "bofe126",
+    "productName": "简繁",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026 bofe126",
+    "comments": "剪贴板简繁转换小工具 - Built using Wails",
+    "fileAssociations": [],
+    "protocols": []
+  }
+}

@@ -1,0 +1,18 @@
+# Wails build output
+build/bin/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# macOS
+.DS_Store
+
+# Editor / local
+*.log
+
+# Local tool config
+.claude/settings.local.json
+
+# Downloaded by Wails installer build
+build/windows/installer/tmp/
