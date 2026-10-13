@@ -102,6 +102,11 @@ func (s *Service) Start(ctx context.Context) {
 	}()
 
 	var lastText string
+	// lastDir/lastEnabled detect settings flips so the current
+	// clipboard content is re-evaluated under the new direction (or
+	// after resuming from pause) instead of being deduped away.
+	var lastDir string
+	lastEnabled := true
 	// Start with a 500ms default; immediately overwritten from cfg.
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
@@ -114,6 +119,10 @@ func (s *Service) Start(ctx context.Context) {
 		case <-ticker.C:
 			// Check current settings; this is cheap (mutex read).
 			snap := s.cfg.Get()
+			if snap.Direction != lastDir || (snap.Enabled && !lastEnabled) {
+				lastText = ""
+			}
+			lastDir, lastEnabled = snap.Direction, snap.Enabled
 
 			text, err := clipboard.ReadAll()
 			if err != nil {
