@@ -21,10 +21,6 @@
     if (timer) clearInterval(timer);
   });
 
-  async function swapDirection() {
-    await saveSettings({ direction: $settings.direction === 't2s' ? 's2t' : 't2s' });
-  }
-
   async function reset() {
     await resetCounter();
   }
@@ -59,39 +55,36 @@
   }
 
   $: rev = $settings.direction === 't2s';
-  $: clipboardHead = $status.clipboard_head || '';
   $: lastEvent = $status.last_event;
-  $: lastConvert =
-    lastEvent && lastEvent.kind === 'convert' && lastEvent.target
-      ? lastEvent.target
-      : '';
+  // The card shows the most recent *processed* item: its original
+  // text and the outcome — not the live clipboard, which after
+  // write-back would just echo the result.
+  $: srcText = lastEvent?.source || '';
+  $: isConvert = lastEvent?.kind === 'convert' && !!lastEvent.target;
+  $: dstText = isConvert ? lastEvent.target : '';
+  $: dstHint = !lastEvent
+    ? '（等待复制）'
+    : lastEvent.kind === 'skip'
+      ? `（未转换：${skipReasonText(lastEvent.skip_reason)}）`
+      : lastEvent.kind === 'error'
+        ? '（转换出错）'
+        : '（等待转换）';
 </script>
 
 <div class="status" class:rev>
 
   <!-- Floating glass conversion card (overlaps the gradient header) -->
   <div class="float-card">
+    <div class="fc-title">最近转换</div>
     <div class="panes">
-      <div class="pane" class:jian={!rev} class:fan={rev} class:empty={!clipboardHead}>
-        <span class="tag">剪贴板 · {rev ? '繁体' : '简体'}</span>
-        <div class="pane-body">{clipboardHead || '（剪贴板为空）'}</div>
+      <div class="pane" class:jian={!rev} class:fan={rev} class:empty={!srcText}>
+        <span class="tag">原文 · {rev ? '繁体' : '简体'}</span>
+        <div class="pane-body">{srcText || '（等待复制）'}</div>
       </div>
-      <button
-        class="dir-chip"
-        on:click={swapDirection}
-        aria-label="切换转换方向（当前：{rev ? '繁转简' : '简转繁'}）"
-        title="切换转换方向"
-      >
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
-             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-             stroke-linejoin="round" aria-hidden="true">
-          <path d="M17 1l4 4-4 4"/><path d="M21 5H7"/>
-          <path d="M7 23l-4-4 4-4"/><path d="M3 19h14"/>
-        </svg>
-      </button>
-      <div class="pane" class:fan={!rev} class:jian={rev} class:empty={!lastConvert}>
-        <span class="tag">转换结果 · {rev ? '简体' : '繁体'}</span>
-        <div class="pane-body">{lastConvert || '（等待转换）'}</div>
+      <div class="flow" aria-hidden="true">→</div>
+      <div class="pane" class:fan={!rev} class:jian={rev} class:empty={!dstText}>
+        <span class="tag">结果 · {rev ? '简体' : '繁体'}</span>
+        <div class="pane-body">{dstText || dstHint}</div>
       </div>
     </div>
   </div>
@@ -215,31 +208,18 @@
     font-size: 12px;
   }
 
-  /* single direction toggle between the panes */
-  .dir-chip {
+  .fc-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
+    color: var(--text-secondary); text-transform: uppercase;
+    margin-bottom: 9px;
+  }
+
+  /* static flow indicator between the panes */
+  .flow {
     align-self: center;
-    display: flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px;
-    border: none; cursor: pointer;
-    background: var(--grad);
-    color: #fff;
-    border-radius: 50%;
-    padding: 0;
-    box-shadow: 0 2px 6px rgba(43, 92, 217, 0.3);
+    color: var(--text-hint);
+    font-size: 15px; font-weight: 600;
     flex-shrink: 0;
-    transition: transform 150ms, box-shadow 150ms, background 400ms ease;
-  }
-  .dir-chip:hover {
-    transform: scale(1.06);
-    box-shadow: 0 3px 10px rgba(43, 92, 217, 0.4);
-  }
-  .dir-chip:active { transform: scale(0.97); }
-  .status.rev .dir-chip {
-    background: var(--grad-rev);
-    box-shadow: 0 2px 6px rgba(27,163,127,.3);
-  }
-  .status.rev .dir-chip:hover {
-    box-shadow: 0 3px 10px rgba(27,163,127,.4);
   }
 
   /* ---------- history ---------- */

@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { initSettings, settings, saveSettings, refreshStatus } from './lib/store.js';
+  import { initSettings, settings, saveSettings } from './lib/store.js';
   import Status from './lib/Status.svelte';
 
   let cogOpen = false;
@@ -53,9 +53,8 @@
     }
   }
 
-  async function toggleEnabled() {
-    await flush('enabled', !$settings.enabled);
-    await refreshStatus();
+  async function swapDirection() {
+    await flush('direction', $settings.direction === 't2s' ? 's2t' : 't2s');
   }
 
   $: rev = $settings.direction === 't2s';
@@ -69,17 +68,18 @@
       <div class="bmark">{rev ? '繁简' : '简繁'}</div>
       <div class="bbrand">
         <div class="t1">{rev ? '繁简转换' : '简繁转换'}</div>
-        <div class="t2">剪贴板中文自动转换</div>
+        <div class="t2" class:paused={!$settings.enabled}>
+          {$settings.enabled ? '剪贴板中文自动转换' : '已暂停 · 在菜单栏中恢复'}
+        </div>
       </div>
       <button
-        class="bswitch"
+        class="dir-pill"
         class:paused={!$settings.enabled}
-        on:click={toggleEnabled}
-        role="switch"
-        aria-checked={$settings.enabled}
-        aria-label={$settings.enabled ? '暂停' : '启用'}
+        on:click={swapDirection}
+        aria-label="切换转换方向（当前：{rev ? '繁转简' : '简转繁'}）"
+        title="点击切换转换方向"
       >
-        <span class="dot"></span>{$settings.enabled ? '运行中' : '已暂停'}
+        {rev ? '繁 → 简' : '简 → 繁'}
       </button>
       <button
         class="bcog"
@@ -151,23 +151,23 @@
   .bbrand { flex: 1; min-width: 0; }
   .t1 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
   .t2 { font-size: 11px; opacity: 0.85; margin-top: 1px; }
+  .t2.paused { opacity: 1; font-weight: 600; color: #FFE9A8; }
 
-  .bswitch {
-    display: flex; align-items: center; gap: 7px;
-    background: rgba(255,255,255,0.16);
-    border: 1px solid rgba(255,255,255,0.35);
-    border-radius: 999px; padding: 5px 12px 5px 9px;
-    font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
-    color: #fff;
-    transition: opacity 200ms;
+  /* direction control: the single header action */
+  .dir-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff; color: var(--blue);
+    border: 1px solid #fff;
+    border-radius: 999px; padding: 5px 12px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    cursor: pointer; flex-shrink: 0; white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: transform 150ms, box-shadow 150ms, color 400ms ease, opacity 200ms;
   }
-  .bswitch .dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #B4F4DF;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.18);
-  }
-  .bswitch.paused { opacity: .72; }
-  .bswitch.paused .dot { background: rgba(255,255,255,.55); box-shadow: none; }
+  .dir-pill:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+  .dir-pill:active { transform: translateY(0); }
+  .dir-pill.paused { opacity: 0.6; }
+  main.rev .dir-pill { color: var(--green); }
 
   .bcog {
     width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
