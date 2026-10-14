@@ -85,12 +85,6 @@
         title="点击切换转换方向"
       >
         {rev ? '繁 → 简' : '简 → 繁'}
-        <svg viewBox="0 0 24 24" width="11" height="11" fill="none"
-             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-             stroke-linejoin="round" aria-hidden="true">
-          <path d="M17 1l4 4-4 4"/><path d="M21 5H7"/>
-          <path d="M7 23l-4-4 4-4"/><path d="M3 19h14"/>
-        </svg>
       </button>
       <button
         class="bcog"
@@ -174,13 +168,12 @@
     display: inline-flex; align-items: center; gap: 6px;
     background: #fff; color: var(--blue);
     border: 1px solid #fff;
-    border-radius: 999px; padding: 5px 10px 5px 12px;
+    border-radius: 999px; padding: 5px 12px;
     font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
     cursor: pointer; flex-shrink: 0; white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     transition: transform 150ms, box-shadow 150ms, color 400ms ease, opacity 200ms;
   }
-  .dir-pill svg { opacity: 0.75; }
   .dir-pill:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
   .dir-pill:active { transform: translateY(0); }
   .dir-pill.paused { opacity: 0.6; }
