@@ -14,8 +14,11 @@ import (
 	"github.com/getlantern/systray"
 )
 
-//go:embed icon.ico
-var iconData []byte
+//go:embed icon_s2t.ico
+var iconS2T []byte
+
+//go:embed icon_t2s.ico
+var iconT2S []byte
 
 // SystemTray is the system-tray icon + menu. Create via New,
 // configure callbacks, then call Run in its own goroutine.
@@ -30,18 +33,53 @@ type SystemTray struct {
 
 	// Menu item kept so we can flip the checkbox.
 	mToggle *systray.MenuItem
+
+	// Direction state. curDir is written by SetDirection any time;
+	// applyDirection reads it. SetDirection called before Run is
+	// safe because onReady reads curDir at startup and sets
+	// started=true only after the initial applyDirection completes.
+	started bool
+	curDir  string
 }
 
 // New returns a SystemTray that defaults to "enabled" (matches
-// config.Default().Enabled). Callbacks are nil-safe; the App
-// wires them before calling Run.
+// config.Default().Enabled) and the s2t direction. Callbacks are
+// nil-safe; the App wires them before calling Run.
 func New() *SystemTray {
 	return &SystemTray{enabled: true}
 }
 
-// SetDirection is a no-op on Windows: the tray icon is static and
-// the direction lives in the app window UI.
-func (s *SystemTray) SetDirection(dir string) {}
+// SetDirection flips the direction-aware branding. On Windows the
+// tray icon swaps between two ICOs (gradient split + text are
+// mirrored between 简→繁 and 繁→简) and the tooltip gains the
+// direction. The gradient direction alone is subtle at 16x16, so
+// the tooltip carries the unambiguous signal.
+//
+// Safe to call before Run (state is queued) and after (live swap).
+func (s *SystemTray) SetDirection(dir string) {
+	s.curDir = dir
+	if !s.started {
+		// onReady will pick this up when the systray goroutine
+		// fires; systray.SetIcon must not be called before then.
+		return
+	}
+	s.applyDirection()
+}
+
+// applyDirection writes the current direction into systray. Must
+// only be called after onReady has run (systray handles its own
+// thread-safety — it forwards SetIcon/SetTooltip over an internal
+// channel to the systray goroutine).
+func (s *SystemTray) applyDirection() {
+	icon := iconS2T
+	label := "简→繁"
+	if s.curDir == "t2s" {
+		icon = iconT2S
+		label = "繁→简"
+	}
+	systray.SetIcon(icon)
+	systray.SetTooltip("简繁 — " + label + " 模式")
+}
 
 // SetEnabled updates the checkbox state to match the live config.
 // Safe to call from any goroutine after the menu is constructed.
@@ -69,9 +107,12 @@ func (s *SystemTray) Close() {
 }
 
 func (s *SystemTray) onReady() {
-	systray.SetIcon(iconData)
-	systray.SetTitle("简繁")
-	systray.SetTooltip("简繁 — 剪贴板简繁转换")
+	// Apply the initial direction (which App.initTray queued
+	// before Run). Defaults to s2t if nothing was set.
+	if s.curDir == "" {
+		s.curDir = "s2t"
+	}
+	s.applyDirection()
 
 	// Note: getlantern/systray shows the menu on BOTH left- and
 	// right-click of the tray icon (its wndProc routes both
@@ -131,6 +172,7 @@ func (s *SystemTray) onReady() {
 		}
 	}()
 
+	s.started = true
 	log.Println("✓ 系统托盘已启动")
 }
 
