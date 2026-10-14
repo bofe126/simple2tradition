@@ -21,10 +21,6 @@
     if (timer) clearInterval(timer);
   });
 
-  async function swapDirection() {
-    await saveSettings({ direction: $settings.direction === 't2s' ? 's2t' : 't2s' });
-  }
-
   async function reset() {
     await resetCounter();
   }
@@ -79,23 +75,7 @@
 
   <!-- Floating glass conversion card (overlaps the gradient header) -->
   <div class="float-card">
-    <div class="fc-head">
-      <span class="fc-title">最近转换</span>
-      <button
-        class="dir-btn"
-        on:click={swapDirection}
-        aria-label="切换转换方向（当前：{rev ? '繁转简' : '简转繁'}）"
-        title="点击切换转换方向"
-      >
-        <span>{rev ? '繁 → 简' : '简 → 繁'}</span>
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
-             stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-             stroke-linejoin="round" aria-hidden="true">
-          <path d="M17 1l4 4-4 4"/><path d="M21 5H7"/>
-          <path d="M7 23l-4-4 4-4"/><path d="M3 19h14"/>
-        </svg>
-      </button>
-    </div>
+    <div class="fc-title">最近转换</div>
     <div class="panes">
       <div class="pane" class:jian={!rev} class:fan={rev} class:empty={!srcText}>
         <span class="tag">原文 · {rev ? '繁体' : '简体'}</span>
@@ -228,30 +208,11 @@
     font-size: 12px;
   }
 
-  /* card header: title + direction control */
-  .fc-head {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 10px; margin-bottom: 9px;
-  }
   .fc-title {
     font-size: 11px; font-weight: 600; letter-spacing: 0.07em;
     color: var(--text-secondary); text-transform: uppercase;
+    margin-bottom: 9px;
   }
-  .dir-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    border: none; cursor: pointer;
-    background: var(--grad); color: #fff;
-    border-radius: 999px; padding: 4px 10px 4px 12px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
-    box-shadow: 0 2px 6px rgba(43, 92, 217, 0.3);
-    flex-shrink: 0;
-    transition: transform 150ms, box-shadow 150ms, background 400ms ease;
-  }
-  .dir-btn svg { opacity: 0.85; }
-  .dir-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(43, 92, 217, 0.4); }
-  .dir-btn:active { transform: translateY(0); }
-  .status.rev .dir-btn { background: var(--grad-rev); box-shadow: 0 2px 6px rgba(27,163,127,.3); }
-  .status.rev .dir-btn:hover { box-shadow: 0 3px 10px rgba(27,163,127,.4); }
 
   /* static flow indicator between the panes */
   .flow {
