@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { initSettings, settings, saveSettings, refreshStatus } from './lib/store.js';
+  import { initSettings, settings, saveSettings } from './lib/store.js';
   import Status from './lib/Status.svelte';
 
   let cogOpen = false;
@@ -53,11 +53,6 @@
     }
   }
 
-  async function setEnabled(v) {
-    await flush('enabled', v);
-    await refreshStatus();
-  }
-
   async function swapDirection() {
     await flush('direction', $settings.direction === 't2s' ? 's2t' : 't2s');
   }
@@ -74,7 +69,7 @@
       <div class="bbrand">
         <div class="t1">{rev ? '繁简转换' : '简繁转换'}</div>
         <div class="t2" class:paused={!$settings.enabled}>
-          {$settings.enabled ? '剪贴板中文自动转换' : '已暂停 · 在设置中恢复'}
+          {$settings.enabled ? '剪贴板中文自动转换' : '已暂停 · 在菜单栏中恢复'}
         </div>
       </div>
       <button
@@ -109,11 +104,6 @@
   {#if cogOpen}
     <div class="popover" role="dialog" aria-label="设置">
       <div class="pop-title">转换</div>
-      <label class="pop-row">
-        <span>启用自动转换</span>
-        <input type="checkbox" class="toggle" checked={$settings.enabled}
-          on:change={(e) => setEnabled(e.target.checked)}/>
-      </label>
       <label class="pop-row stacked">
         <span>自动替换剪贴板内容<br/>
           <small>关闭后仅记录结果，不修改剪贴板</small>
